@@ -8,16 +8,17 @@ canvas{width:min(100vw,calc((100dvh - 60px)*16/9));aspect-ratio:16/9;touch-actio
 p{margin:8px 12px;max-width:900px;text-align:center}
 html,body{overscroll-behavior:none}
 #fs{display:none;position:fixed;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:5;font:bold 12px system-ui;padding:6px 10px;border:3px solid #5a2f1c;border-radius:10px;background:#f3dfb6;color:#5a2f1c}
-#rot{display:none;position:fixed;inset:0;z-index:9;background:rgba(20,12,8,.88);color:#fff3d1;align-items:center;justify-content:center;text-align:center;font:bold 20px system-ui;padding:24px}
-#rot button{margin-top:16px;font:bold 16px system-ui;padding:8px 16px;border:3px solid #5a2f1c;border-radius:12px;background:#2f7d3a;color:#fff3d1}
-@media(orientation:portrait) and (max-width:700px){#rot.on{display:flex}}
 @media(max-height:520px){p{display:none}canvas{width:min(100vw,calc(100dvh*16/9))}}
-</style></head><body><canvas id="c" width="640" height="360"></canvas><button id="fs">Fullscreen</button><div id="rot"><div>Turn your phone sideways for a bigger game<br><button id="rotok">Play anyway</button></div></div>
+html.rot,html.rot body{overflow:hidden;height:100%}
+html.rot canvas{position:fixed;left:50%;top:50%;width:min(100dvh,calc(100vw*16/9));transform:translate(-50%,-50%) rotate(90deg)}
+html.rot p,html.rot #fs{display:none}
+</style></head><body><canvas id="c" width="640" height="360"></canvas><button id="fs">Fullscreen</button>
 <p><b>Tap</b> to jump · <b>Hold</b> to fly and backflip while your air lasts · land the backflip to speed up. Keyboard: Space (tap or hold) to play. In menus use the arrow keys, Enter to choose, Esc or Backspace to go back. Shift or Enter starts a run. M mutes the siren. Tip: rotate your phone for a bigger view.</p>
 <script>
 const PI=Math.PI,TAU=PI*2,cv=document.getElementById('c'),x=cv.getContext('2d'),W=640,H=360,G=290,CX=130;
 let st='splash',best=0,tc=0,sc=0,boost,dist,bonus,air,coinsN,nextEvt,lastEnd,obs,coins,feats,plats,car,pop,pend,combo,held=false,hT=0,sx=0,sy=0,sd=false,thr=false,shake=0,ch,cp,nextCp,why='',T,nSt,pgy,rv,gp,sf,ac,so,sg,muted=false,dyT=0,ps=[];
 try{best=+localStorage.getItem('rr')||0;tc=+localStorage.getItem('rc')||0}catch(e){}
+function pt(e){const r=cv.getBoundingClientRect(),cw=cv.offsetWidth,ch=cv.offsetHeight;if(!rotOn)return[(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H];const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);return[(dy+cw/2)/cw*W,(-dx+ch/2)/ch*H]}
 const na=a=>{a%=TAU;if(a>PI)a-=TAU;if(a<-PI)a+=TAU;return a};
 const score=()=>Math.floor(dist/5+bonus),COLS=[['#c5161d','#8f0f14'],['#2f8fd8','#1f5d94'],['#2f7d3a','#1d5226'],['#f2c230','#b8901c'],['#7a3bd0','#4f2590'],['#eceff3','#9aa3b0']];let ci=0,jc=0,roofD=0,nb=0;try{ci=+localStorage.getItem('rcl')||0}catch(e){}
 function reset(){car={y:G,vy:0,a:0,spin:0,roll:0,rp:0,dive:false,n:0,g:true,pf:null};boost=0;dist=0;bonus=0;air=100;coinsN=0;obs=[];coins=[];feats=[];plats=[];pop=null;pend=0;combo=1;sc=0;T=0;nSt=0;sf=0;ch={on:1,d:110,lvl:0};cp={x:CX-70,w:60,done:1,broken:1};nextCp=1e9;nextEvt=520;lastEnd=0;pgy=G;rv=0;jc=0;roofD=0;nb=0;passed=0;ban=null;fxp=[];dead=0;revd=0;misDone=0;th=.12;jf=1}
@@ -32,7 +33,7 @@ function stunt(d){if(car.n>=4||air<8)return;air-=8;car.n++;pend+=50;cheer(['Nice
 if(d=='r'){car.spin=TAU;say('Front flip')}else if(d=='l'){car.spin=-TAU;say('Back flip')}
 else if(d=='u'){car.roll=TAU;car.rp=0;say('Barrel roll')}else{car.dive=true;car.vy=640;say('Nose dive')}}
 function swipe(d,hold){if(st!='play')return;if(hold&&!car.g){stunt(d);boost+=90;car.gl=.6;car.hs=1}else if(d=='r'){boost+=130;air=Math.max(0,air-6)}else if(d=='u'){if(car.g)jump();else if(air>=10){car.vy=-380;boost+=40;air-=10;beep(500,.1)}}}
-cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);const r=cv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*W,py=(e.clientY-r.top)/r.height*H;if(st!='play'){if(st=='dying'&&dyT<.6)return;if(st=='dying'){endRun();return}uiTap(px,py);return}if(px>W-44&&py>32&&py<68){held=false;st='pause';return}sx=e.clientX;sy=e.clientY;held=true;hT=performance.now();sd=false;jf=0});
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);const[px,py]=pt(e);if(st!='play'){if(st=='dying'&&dyT<.6)return;if(st=='dying'){endRun();return}uiTap(px,py);return}if(px>W-44&&py>32&&py<68){held=false;st='pause';return}sx=e.clientX;sy=e.clientY;held=true;hT=performance.now();sd=false;jf=0});
 cv.addEventListener('pointermove',e=>{if(!held||sd)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(0){sd=true;swipe(Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy<0?'u':'d'),performance.now()-hT>140)}});
 cv.addEventListener('pointerup',()=>{if(held&&!sd&&!jf){jf=1;jump()}held=false});cv.addEventListener('contextmenu',e=>e.preventDefault());cv.addEventListener('wheel',e=>{if(st=='lb'){lbOff=Math.max(0,lbOff+(e.deltaY>0?1:-1));e.preventDefault()}},{passive:false});
 cv.addEventListener('pointercancel',()=>{held=false});
@@ -299,7 +300,7 @@ function pRev(){card(150,70,340,200,'CONTINUE?','#e8742a');tx2('Keep the chase g
 function revive(){if(tc<30)return;tc-=30;svS();revd=1;dead=0;car.y=G;car.vy=0;car.a=0;car.spin=0;car.roll=0;car.rp=0;car.dive=false;car.n=0;car.g=true;obs=obs.filter(o=>o.x-sc>W);ch.on=1;ch.d=200;boost=0;air=100;held=false;st='play'}
 function afterRev(){if(nb&&score()>0&&!pname){st='name';return}st='res';misDone=0}
 function endRun(){if(tc>=30&&!revd){st='rev';return}afterRev()}
-function pName(){card(150,60,340,220,'NEW HIGH SCORE!','#e5484d');tx2(score(),320,140,44);tx2('Enter your name',320,176,14,'#8a5a2b');const r=cv.getBoundingClientRect(),k=r.width/W;nameIn.style.display='block';nameIn.style.left=(r.left+200*k)+'px';nameIn.style.top=(r.top+188*k)+'px';nameIn.style.width=(240*k)+'px';nameIn.style.height=(34*k)+'px';nameIn.style.fontSize=(18*k)+'px';btn(250,236,140,38,'OK',saveName,'#2f7d3a',17)}
+function pName(){card(150,60,340,220,'NEW HIGH SCORE!','#e5484d');tx2(score(),320,140,44);tx2('Enter your name',320,176,14,'#8a5a2b');const r=cv.getBoundingClientRect(),k=cv.offsetWidth/W,cx=r.left+r.width/2,cy=r.top+r.height/2,u=(320/W-.5)*cv.offsetWidth,v=(205/H-.5)*cv.offsetHeight,mx=rotOn?cx-v:cx+u,my=rotOn?cy+u:cy+v,iw=240*k,ih=34*k;nameIn.style.display='block';nameIn.style.left=(mx-iw/2)+'px';nameIn.style.top=(my-ih/2)+'px';nameIn.style.width=iw+'px';nameIn.style.height=ih+'px';nameIn.style.fontSize=(18*k)+'px';nameIn.style.transform=rotOn?'rotate(90deg)':'none';btn(250,236,140,38,'OK',saveName,'#2f7d3a',17)}
 function saveName(){const v=(nameIn.value||'Player').trim().slice(0,12)||'Player';pname=v;try{localStorage.setItem('rname',v)}catch(e){}nameIn.style.display='none';submit(score());st='res';misDone=0}
 function pPause(){card(190,70,260,210,'PAUSED','#2b4a8b');btn(230,114,180,40,'Resume',()=>{held=false;st='play'},'#2f7d3a',17);btn(230,162,180,40,'Settings',()=>go('set'),'#e8742a',16);btn(230,210,180,40,'Home',goHome,'#c5161d',16)}
 function uiDraw(){if(st!='name'&&nameIn)nameIn.style.display='none';({splash:pSplash,home:pHome,how:pHow,set:pSet,world:pWorld,garage:pGarage,lb:pLb,res:pRes,mis:pMis,rev:pRev,name:pName,pause:pPause}[st]||(()=>{}))();celDraw();if(toast){x.fillStyle='rgba(20,12,8,.78)';rr(150,160,340,38,12);x.fill();tx2(toast.t,320,185,15,'#fff3d1')}}
@@ -364,9 +365,9 @@ x.font='16px system-ui';if(st=='over'){x.fillText('Score '+Math.floor(dist+bonus
 else x.fillText('You just blew through a checkpoint. Outrun the police.',W/2,135);
 x.fillText('Tap to jump · Hold to fly and flip · Land it to speed up',W/2,200);x.fillText('Jump over checkpoints to stay unseen. Smash one and the police close in.',W/2,224);x.font='bold 18px system-ui';x.fillText(st=='ready'?'Tap to start':'Tap to try again',W/2,270)}
 x.restore()}
-let K=1;function fit(){const r=cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),w=Math.max(320,Math.round(r.width*d));if(cv.width!==w){cv.width=w;cv.height=Math.round(w*9/16)}K=cv.width/W}
+let K=1,rotOn=false;function fit(){rotOn=innerHeight>innerWidth&&matchMedia('(pointer:coarse)').matches;document.documentElement.classList.toggle('rot',rotOn);const d=Math.min(2,window.devicePixelRatio||1),w=Math.max(320,Math.round(cv.offsetWidth*d));if(cv.width!==w){cv.width=w;cv.height=Math.round(w*9/16)}K=cv.width/W}
 addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,200));fit();
-const rot=document.getElementById('rot'),fsb=document.getElementById('fs');rot.classList.add('on');document.getElementById('rotok').onclick=()=>rot.classList.remove('on');
+const fsb=document.getElementById('fs');
 if(!document.documentElement.requestFullscreen)fsb.style.display='none';
 fsb.onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await document.documentElement.requestFullscreen();if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('landscape').catch(()=>{})}}catch(e){}};
 let ADS=[{t:'YOUR AD HERE',s:'Advertise with us',bg:'#2b4a8b',fg:'#fff3d1',img:''},{t:'REACH PLAYERS',s:'Sponsor the next run',bg:'#2f7d3a',fg:'#fff3d1',img:''},{t:'YOUR BRAND',s:'Be seen on the road',bg:'#e8742a',fg:'#fff3d1',img:''}];const ADS_URL='',ADS_CONTACT='yoursite.com/ads',ADIMG={};
